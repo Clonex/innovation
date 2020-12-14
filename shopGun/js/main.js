@@ -9,7 +9,7 @@ export default class Crawl {
 
     async run()
     {
-        const blackList = ["mælk", "vand", "mel", "hvedemel", "salt", "sukker", "peber", "kanel", "rapsolie", "ris"]; //"smør", 
+        const blackList = ["mælk", "vand", "mel", "hvedemel", "salt", "sukker", "peber", "kanel", "rapsolie", "ris", "bullion", "karry", "dild", "paprika", "chilli", "hvidløgspulver", "oregano", "basilikum", "timian"]; //"smør", 
         const dealers = ["267e1m", "98b7e", "101cD", "9ba51", "11deC", "71c90", "0b1e8", "93f13", "bdf5A"]
         
         let matches = [];
@@ -59,9 +59,15 @@ export default class Crawl {
                     const name = ing.name.trim().toLowerCase();
                     if(name.length > 0)
                     {
-                        const check = offers.find(offer => offer.name.includes(name) || name.includes(offer.name));
+                        const check = offers.find(offer => {
+                            if(name.split(" ").includes("æg"))
+                            {
+                                return offer.name.split(" ").find(n => name.split(" ").includes(n)) || name.split(" ").find(n => offer.name.split(" ").includes(n));
+                            }
+                            return offer.name.includes(name) || name.includes(offer.name);
+                        });
                                                 //.find(offer => offer.name.split(" ").find(n => name.split(" ").includes(n)) || name.split(" ").find(n => offer.name.split(" ").includes(n)));
-                        const blackListCheck = blackList.find(n => n.includes(name) || name.includes(n));
+                        const blackListCheck = blackList.find(n => name.includes(n));
                         if(!check && !blackListCheck)
                         {
                             hasMatched = false;
@@ -82,7 +88,15 @@ export default class Crawl {
         }
         
 
-        console.log("Matches", matches.filter(d => d.cat === "Hovedretter").filter((d, i, arr) => arr.findIndex(a => a.name === d.name) === i));
+        console.log("Matches", 
+            matches.filter(d => d.cat === "Hovedretter")
+                .filter((d, i, arr) => arr.findIndex(a => a.name === d.name) === i)
+                .map(d => ({
+                    ...d,
+                    totalPrice: d.offers.filter(d => !!d).reduce((a, b) => a + b.price, 0)
+                })).sort((a, b) => a.totalPrice - b.totalPrice)
+
+        );
         
     }
 };
