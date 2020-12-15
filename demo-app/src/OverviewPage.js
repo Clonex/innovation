@@ -35,9 +35,8 @@ export default class OverviewPage extends React.Component {
         const blackList = [];//"mælk", "vand", "mel", "hvedemel", "salt", "sukker", "peber", "kanel", "rapsolie", "ris", "bullion", "karry", "dild", "paprika", "chilli", "hvidløgspulver", "oregano", "basilikum", "timian"]; //"smør", 
         let matches = [];
         const data = this.state.recipes;
-        // const offers = this.state.offers;
 
-        const groupedOffers = this.state.offers.reduce((obj, offer) => {
+        const shopOffers = this.state.offers.reduce((obj, offer) => {
             if(!obj[offer.dealer])
             {
                 obj[offer.dealer] = [];
@@ -45,39 +44,39 @@ export default class OverviewPage extends React.Component {
             obj[offer.dealer].push(offer);
             return obj;
         }, {});
-        const groupKeys = Object.keys(groupedOffers).reverse();
+        const groupKeys = Object.keys(shopOffers);
 
         for(let i = 0; i < data.length; i++)
         {
             const recipe = data[i];
-            let tempMatches = [];
+            let allOffers = [];
 
             for(let groupI = 0; groupI < groupKeys.length; groupI++)
             {
                 const tempRecipe = {...recipe};
                 tempRecipe.offers = [];
                 const groupKey = groupKeys[groupI];
-                const offers = groupedOffers[groupKey];
+                const offers = shopOffers[groupKey];
                 for(let j = 0; j < recipe.ingredients.length; j++)
                 {
                     const ing = recipe.ingredients[j];
                     const name = ing.name.trim().toLowerCase();
                     if(name.length > 0)
                     {
-                        const check = inOfferCheck(name, offers);
+                        const ingredientOffer = inOfferCheck(name, offers);
                         const blackListCheck = blackList.find(n => name.includes(n));
-                        if(!check && !blackListCheck)
+                        if(!ingredientOffer && !blackListCheck)
                         {
                             continue;
                         }
-                        tempRecipe.brandID = check.brandID;
-                        tempRecipe.offers.push(check);
+                        tempRecipe.brandID = ingredientOffer.brandID;
+                        tempRecipe.offers.push(ingredientOffer);
                     }
                 }
-                tempMatches.push(tempRecipe);
+                allOffers.push(tempRecipe);
             }
 
-            const bestMatch = tempMatches.sort((a, b) => a.offers.length - b.offers.length);
+            const bestMatch = allOffers.sort((a, b) => a.offers.length - b.offers.length);
             matches.push(bestMatch[0]);
         }
         
@@ -95,7 +94,7 @@ export default class OverviewPage extends React.Component {
 
     async loadOffers()
     {
-        const dealers = ["267e1m", "101cD", "98b7e"];//, "9ba51", "11deC", "71c90", "0b1e8", "93f13", "bdf5A"];
+        const dealers = ["267e1m", "101cD", "98b7e", "9ba51", "11deC", "71c90", "0b1e8", "93f13", "bdf5A"];
         let offers = [];
         let dealerInfo = {};
         for(let dI = 0; dI < dealers.length; dI++)

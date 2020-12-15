@@ -18,6 +18,9 @@ export default class RecipePage extends React.Component {
 
     add = (ingredients) => {
         this.props.addIngredients(ingredients);
+        this.setState({
+            added: true,
+        });
     };
 
     render(){
