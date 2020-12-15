@@ -6,3 +6,15 @@
 .container {
     overflow: auto;
 }
+
+
+button.addTo {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+
+button.backBtn {
+    padding: 10px;
+}

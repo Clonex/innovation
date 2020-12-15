@@ -16,12 +16,16 @@ export default class RecipePage extends React.Component {
         }
     }
 
+    add = (ingredients) => {
+        this.props.addIngredients(ingredients);
+    };
+
     render(){
         console.log("Recipe", this.props);
         const data = this.props.recipe;
-        
+        const branding = this.props.dealerInfo[data.brandID];
         return (<div>
-            <button onClick={() => this.goBack()}>
+            <button onClick={() => this.goBack()} className="backBtn">
                 Tilbage
             </button>
             <h1>{data.name}</h1>
@@ -38,8 +42,8 @@ export default class RecipePage extends React.Component {
                             </div>);
                         })
                     }
-                    <button>
-                        Tilføj til kurv
+                    <button className="addTo" onClick={() => this.add(data.ingredients)}>
+                        Tilføj til indkøbsliste
                     </button>
                 </div>
                 <div className="desc">
@@ -48,6 +52,7 @@ export default class RecipePage extends React.Component {
                     }
                 </div>
             </div>
+            <h2>Andre opskrifter fra {branding.name}</h2>
             <div className="recipies">
                 {
                     this.props.recipes.filter((_, i) => i < 50).map((match, i) => {
@@ -60,7 +65,7 @@ export default class RecipePage extends React.Component {
                                 <img className="brandLogo" src={branding.logo} loading="auto"/>
                             </div>
                             <div className="name">
-                                <b>{match.name}</b> - {branding.name}
+                                <b>{match.name}</b>
                             </div>
                         </div>);
                     })

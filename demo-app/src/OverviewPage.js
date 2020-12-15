@@ -1,5 +1,6 @@
 import React from "react";
 import RecipePage from "./RecipePage";
+import CartPage from "./CartPage";
 
 import {inOfferCheck} from "./helpers";
 
@@ -19,6 +20,9 @@ export default class OverviewPage extends React.Component {
         dealerInfo: {},
 
         selected: false,
+        cartOpen: false,
+
+        cart: [],
     };
 
     async componentDidMount()
@@ -61,7 +65,6 @@ export default class OverviewPage extends React.Component {
                     if(name.length > 0)
                     {
                         const check = inOfferCheck(name, offers);
-                                                //.find(offer => offer.name.split(" ").find(n => name.split(" ").includes(n)) || name.split(" ").find(n => offer.name.split(" ").includes(n)));
                         const blackListCheck = blackList.find(n => name.includes(n));
                         if(!check && !blackListCheck)
                         {
@@ -77,74 +80,17 @@ export default class OverviewPage extends React.Component {
             const bestMatch = tempMatches.sort((a, b) => a.offers.length - b.offers.length);
             matches.push(bestMatch[0]);
         }
-
-
+        
         matches = matches.filter(d => d.offers.length > 0)
                 .sort((a, b) => Number(b.rating) - Number(a.rating)) // Sort by one with most ingredients first
-                // .sort((a, b) => b.offers.length - a.offers.length) // Sort by one with most ingredients first
                 .sort((a, b) => ((b.offers.length / b.ingredients.length)) - ((a.offers.length  / a.ingredients.length))); // Sort by recipies with most of their ingredrients first
         console.log("Matches", matches);
 
         this.setState({
-            matches: matches.filter(d => d.cat === "Hovedretter").filter((d, i) => i > 100).map((d, i) => ({...d, i})),//.sort((a, b) => b.images.length - a.images.length),
+            matches: matches.filter(d => d.cat === "Hovedretter").map((d, i) => ({...d, i})),//.sort((a, b) => b.images.length - a.images.length),
             loading: false,
             loadingText: "Færdiggøre..",
         });
-        return;
-
-
-        // for(let i = 0; i < data.length; i++)
-        // {
-        //     const recipe = data[i];
-        //     if(recipe.name.length === 0)
-        //     {
-        //         continue;
-        //     }
-        //     recipe.offers = [];
-        //     let hasMatched = true;
-        //     for(let j = 0; j < recipe.ingredients.length; j++)
-        //     {
-        //         const ing = recipe.ingredients[j];
-        //         const name = ing.name.trim().toLowerCase();
-        //         if(name.length > 0)
-        //         {
-        //             const check = offers.find(offer => {
-        //                 if(name.split(" ").includes("æg"))
-        //                 {
-        //                     return offer.name.split(" ").find(n => name.split(" ").includes(n)) || name.split(" ").find(n => offer.name.split(" ").includes(n));
-        //                 }
-        //                 return offer.name.includes(name) || name.includes(offer.name);
-        //             });
-        //                                     //.find(offer => offer.name.split(" ").find(n => name.split(" ").includes(n)) || name.split(" ").find(n => offer.name.split(" ").includes(n)));
-        //             const blackListCheck = blackList.find(n => name.includes(n));
-        //             if(!check && !blackListCheck)
-        //             {
-        //                 hasMatched = false;
-        //                 break;
-        //             }
-        //             recipe.brandID = check.brandID;
-        //             recipe.offers.push(check);
-        //         }
-        //     }
-
-        //     if(hasMatched && recipe.offers.length > 1)
-        //     {
-        //         matches.push({
-        //             ...recipe,
-        //             i
-        //         });
-        //     }
-        // }
-        // console.log("Matches", matches);
-        // this.setState({
-        //     matches: matches.filter((d, i, arr) => arr.findIndex(a => a.name === d.name) === i)
-        //     .map(d => ({
-        //         ...d,
-        //         totalPrice: d.offers.filter(d => !!d).reduce((a, b) => a + b.price, 0)
-        //     })).filter(d => d.cat === "Hovedretter"),//.sort((a, b) => b.images.length - a.images.length),
-        //     loading: false,
-        //     loadingText: "Færdiggøre..",
-        // });
     }
 
     async loadOffers()
@@ -169,7 +115,7 @@ export default class OverviewPage extends React.Component {
                 dealerInfo[catalog.id] = catalog.branding;
                 console.log("Loading", catalog.label);
                 this.setState({
-                    loadingText: "Behandler avis " + catalog.label,
+                    loadingText: `Behandler avis "${catalog.label}"`,
                 });
                 var bootstrapper = new window.SGN.PagedPublicationKit.Bootstrapper({
                     id: catalog.id
@@ -194,9 +140,6 @@ export default class OverviewPage extends React.Component {
             dealerInfo
         });
     }
-    
-
-
 
     render()
     {
@@ -208,37 +151,60 @@ export default class OverviewPage extends React.Component {
         const IN_RECIPE = typeof this.state.selected === "number";
         return  (<div className="basePageContainer">
                 <div className="basePage">
-                {
-                    IN_RECIPE && <RecipePage
-                        recipe={selected}
-                        recipes={this.state.matches.filter(d => d.brandID === selected.brandID && d.i !== selected.i)}
-                        dealerInfo={this.state.dealerInfo}
-                        setSelected={(i) => {
-                            this.setState({selected: i});
-                            window.scrollTo(0, 0);
-                        }}
-                    />
-                }
-                    <div className="overview" style={IN_RECIPE ? {display: "none"} : {}}>
-                        <div className="recipies">
-                        {
-                            this.state.matches.map((match, i) => {
-                                const branding = this.state.dealerInfo[match.brandID];
-                                return (<div className="recipe" key={i} onClick={() => this.setState({selected: i})}>
-                                    <div className="imageContainer">
-                                        {
-                                            match.images.length > 0 && <img src={`https://www.dk-kogebogen.dk/${match.images[0]}`} loading="auto"/>
-                                        }
-                                        <img className="brandLogo" src={branding.logo} loading="auto"/>
-                                    </div>
-                                    <div className="name">
-                                        <b>{match.name}</b> - {branding.name}
-                                    </div>
-                                </div>);
-                            })
+                    {
+                        this.state.cartOpen ? <CartPage
+                            data={this.state.cart}
+                            updateIngredients={(cart) => this.setState({
+                                cart
+                            })}
+                        />
+                        : <React.Fragment>
+                            <div className="cart" onClick={() => this.setState({cartOpen: true})}>
+                                <div className="cartAmount">{this.state.cart.length}</div>
+                                <i className="fa fa-th-list" aria-hidden="true"/>
+                            </div>
+                            {
+                            IN_RECIPE && <RecipePage
+                                recipe={selected}
+                                recipes={this.state.matches.filter(d => d.brandID === selected.brandID && d.i !== selected.i)}
+                                dealerInfo={this.state.dealerInfo}
+                                setSelected={(i) => {
+                                    this.setState({selected: i});
+                                    window.scrollTo(0, 0);
+                                }}
+                                addIngredients={(ings) => this.setState({
+                                    cart: [
+                                        ...this.state.cart,
+                                        ...ings
+                                    ]
+                                })}
+                            />
                         }
-                    </div>
-                </div>
+                        
+                            <div className="overview" style={IN_RECIPE ? {display: "none"} : {}}>
+                                <h1>Opskrifter</h1>
+                                <div className="recipies">
+                                {
+                                    this.state.matches.filter((d, i) => i < 100).map((match, i) => {
+                                        const branding = this.state.dealerInfo[match.brandID];
+                                        return (<div className="recipe" key={i} onClick={() => this.setState({selected: i})}>
+                                            <div className="imageContainer">
+                                                {
+                                                    match.images.length > 0 && <img src={`https://www.dk-kogebogen.dk/${match.images[0]}`} loading="auto"/>
+                                                }
+                                                <img className="brandLogo" src={branding.logo} loading="auto"/>
+                                            </div>
+                                            <div className="name">
+                                                <b>{match.name}</b>
+                                            </div>
+                                        </div>);
+                                    })
+                                }
+                            </div>
+                        </div>
+                        </React.Fragment>
+                    }
+                    
             </div>
         </div>);
     }
