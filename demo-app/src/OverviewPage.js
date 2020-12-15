@@ -1,6 +1,9 @@
 import React from "react";
-import receipies from "./data.json";
+import RecipePage from "./RecipePage";
 
+import {inOfferCheck} from "./helpers";
+
+import receipies from "./data.json";
 import "./overviewPage.css";
 
 export default class OverviewPage extends React.Component {
@@ -9,11 +12,13 @@ export default class OverviewPage extends React.Component {
         loadingText: "Loading..",
         recipes: receipies.filter(d => d.images.length > 0 && d.name.length > 0).map(d => ({
             ...d,
-            ingredients: d.ingredients.filter(ing => ing.name.trim().length > 0),
+            ingredients: d.ingredients.map(d => ({...d, name: d.name.trim()})).filter(ing => ing.name.length > 0),
         })),
         offers: [],
         matches: [],
         dealerInfo: {},
+
+        selected: false,
     };
 
     async componentDidMount()
@@ -36,17 +41,17 @@ export default class OverviewPage extends React.Component {
             obj[offer.dealer].push(offer);
             return obj;
         }, {});
-        console.log(groupedOffers);
-        const groupKeys = Object.keys(groupedOffers);
+        const groupKeys = Object.keys(groupedOffers).reverse();
 
         for(let i = 0; i < data.length; i++)
         {
             const recipe = data[i];
             let tempMatches = [];
-            recipe.offers = [];
 
             for(let groupI = 0; groupI < groupKeys.length; groupI++)
             {
+                const tempRecipe = {...recipe};
+                tempRecipe.offers = [];
                 const groupKey = groupKeys[groupI];
                 const offers = groupedOffers[groupKey];
                 for(let j = 0; j < recipe.ingredients.length; j++)
@@ -55,24 +60,18 @@ export default class OverviewPage extends React.Component {
                     const name = ing.name.trim().toLowerCase();
                     if(name.length > 0)
                     {
-                        const check = offers.find(offer => {
-                            if(name.split(" ").includes("æg"))
-                            {
-                                return offer.name.split(" ").find(n => name.split(" ").includes(n)) || name.split(" ").find(n => offer.name.split(" ").includes(n));
-                            }
-                            return offer.name.includes(name) || name.includes(offer.name);
-                        });
+                        const check = inOfferCheck(name, offers);
                                                 //.find(offer => offer.name.split(" ").find(n => name.split(" ").includes(n)) || name.split(" ").find(n => offer.name.split(" ").includes(n)));
                         const blackListCheck = blackList.find(n => name.includes(n));
                         if(!check && !blackListCheck)
                         {
                             continue;
                         }
-                        recipe.brandID = check.brandID;
-                        recipe.offers.push(check);
+                        tempRecipe.brandID = check.brandID;
+                        tempRecipe.offers.push(check);
                     }
                 }
-                tempMatches.push(recipe);
+                tempMatches.push(tempRecipe);
             }
 
             const bestMatch = tempMatches.sort((a, b) => a.offers.length - b.offers.length);
@@ -87,7 +86,7 @@ export default class OverviewPage extends React.Component {
         console.log("Matches", matches);
 
         this.setState({
-            matches: matches.filter(d => d.cat === "Hovedretter").filter((d, i) => i < 100),//.sort((a, b) => b.images.length - a.images.length),
+            matches: matches.filter(d => d.cat === "Hovedretter").filter((d, i) => i > 100).map((d, i) => ({...d, i})),//.sort((a, b) => b.images.length - a.images.length),
             loading: false,
             loadingText: "Færdiggøre..",
         });
@@ -150,7 +149,7 @@ export default class OverviewPage extends React.Component {
 
     async loadOffers()
     {
-        const dealers = ["267e1m", "98b7e", "101cD", "9ba51", "11deC", "71c90", "0b1e8", "93f13", "bdf5A"];
+        const dealers = ["267e1m", "101cD", "98b7e"];//, "9ba51", "11deC", "71c90", "0b1e8", "93f13", "bdf5A"];
         let offers = [];
         let dealerInfo = {};
         for(let dI = 0; dI < dealers.length; dI++)
@@ -205,23 +204,42 @@ export default class OverviewPage extends React.Component {
         {
             return (<div className="loading">{this.state.loadingText}</div>);
         }
-        return (<div className="recipies">
-            {
-                this.state.matches.map((match, i) => {
-                    const branding = this.state.dealerInfo[match.brandID];
-                    return (<div className="recipe" key={i}>
-                        <div className="imageContainer">
-                            {
-                                match.images.length > 0 && <img src={`https://www.dk-kogebogen.dk/${match.images[0]}`} loading="auto"/>
-                            }
-                            <img className="brandLogo" src={branding.logo} loading="auto"/>
-                        </div>
-                        <div className="name">
-                            <b>{match.name}</b> - {branding.name}
-                        </div>
-                    </div>);
-                })
-            }
+        const selected = this.state.matches[this.state.selected];
+        const IN_RECIPE = typeof this.state.selected === "number";
+        return  (<div className="basePageContainer">
+                <div className="basePage">
+                {
+                    IN_RECIPE && <RecipePage
+                        recipe={selected}
+                        recipes={this.state.matches.filter(d => d.brandID === selected.brandID && d.i !== selected.i)}
+                        dealerInfo={this.state.dealerInfo}
+                        setSelected={(i) => {
+                            this.setState({selected: i});
+                            window.scrollTo(0, 0);
+                        }}
+                    />
+                }
+                    <div className="overview" style={IN_RECIPE ? {display: "none"} : {}}>
+                        <div className="recipies">
+                        {
+                            this.state.matches.map((match, i) => {
+                                const branding = this.state.dealerInfo[match.brandID];
+                                return (<div className="recipe" key={i} onClick={() => this.setState({selected: i})}>
+                                    <div className="imageContainer">
+                                        {
+                                            match.images.length > 0 && <img src={`https://www.dk-kogebogen.dk/${match.images[0]}`} loading="auto"/>
+                                        }
+                                        <img className="brandLogo" src={branding.logo} loading="auto"/>
+                                    </div>
+                                    <div className="name">
+                                        <b>{match.name}</b> - {branding.name}
+                                    </div>
+                                </div>);
+                            })
+                        }
+                    </div>
+                </div>
+            </div>
         </div>);
     }
 
