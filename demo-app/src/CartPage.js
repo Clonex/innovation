@@ -8,8 +8,11 @@ export default class CartPage extends React.Component {
 
     render()
     {
-        console.log(this.props);
         return (<div className="cartContainer">
+            <button onClick={() => this.goBack()} className="backBtn">
+                Tilbage
+            </button>
+
             <h1>Indkøbsliste</h1>
             <div className="container">
                 {

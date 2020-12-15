@@ -28,10 +28,11 @@ export default class OverviewPage extends React.Component {
     async componentDidMount()
     {
         await this.loadOffers();
-        this.matchOffers();
+        setTimeout(() => this.matchOffers(), 200);
     }
 
     matchOffers(){
+        console.log("Matching offers");
         const blackList = [];//"mælk", "vand", "mel", "hvedemel", "salt", "sukker", "peber", "kanel", "rapsolie", "ris", "bullion", "karry", "dild", "paprika", "chilli", "hvidløgspulver", "oregano", "basilikum", "timian"]; //"smør", 
         let matches = [];
         const data = this.state.recipes;
@@ -48,6 +49,10 @@ export default class OverviewPage extends React.Component {
 
         for(let i = 0; i < data.length; i++)
         {
+            // if(i%100 === 0)
+            // {
+            //     console.log("Matched", i, "/", data.length);
+            // }
             const recipe = data[i];
             let allOffers = [];
 
@@ -64,7 +69,7 @@ export default class OverviewPage extends React.Component {
                     if(name.length > 0)
                     {
                         const ingredientOffer = inOfferCheck(name, offers);
-                        const blackListCheck = blackList.find(n => name.includes(n));
+                        const blackListCheck = false;//blackList.find(n => name.includes(n));
                         if(!ingredientOffer && !blackListCheck)
                         {
                             continue;
@@ -74,6 +79,10 @@ export default class OverviewPage extends React.Component {
                     }
                 }
                 allOffers.push(tempRecipe);
+                if(tempRecipe.offers.length >= tempRecipe.ingredients.length)
+                {
+                    break;
+                }
             }
 
             const bestMatch = allOffers.sort((a, b) => a.offers.length - b.offers.length);
@@ -130,7 +139,6 @@ export default class OverviewPage extends React.Component {
                     });
                 });
             }
-
         }
         
         this.setState({
@@ -138,6 +146,11 @@ export default class OverviewPage extends React.Component {
             offers,
             dealerInfo
         });
+    }
+
+    setSelected = (i) => {
+        this.setState({selected: i});
+        window.scrollTo(0, 0);
     }
 
     render()
@@ -153,6 +166,7 @@ export default class OverviewPage extends React.Component {
                     {
                         this.state.cartOpen ? <CartPage
                             data={this.state.cart}
+                            setSelected={this.setSelected}
                             updateIngredients={(cart) => this.setState({
                                 cart
                             })}
@@ -167,10 +181,7 @@ export default class OverviewPage extends React.Component {
                                 recipe={selected}
                                 recipes={this.state.matches.filter(d => d.brandID === selected.brandID && d.i !== selected.i)}
                                 dealerInfo={this.state.dealerInfo}
-                                setSelected={(i) => {
-                                    this.setState({selected: i});
-                                    window.scrollTo(0, 0);
-                                }}
+                                setSelected={this.setSelected}
                                 addIngredients={(ings) => this.setState({
                                     cart: [
                                         ...this.state.cart,
@@ -186,7 +197,7 @@ export default class OverviewPage extends React.Component {
                                 {
                                     this.state.matches.filter((d, i) => i < 100).map((match, i) => {
                                         const branding = this.state.dealerInfo[match.brandID];
-                                        return (<div className="recipe" key={i} onClick={() => this.setState({selected: i})}>
+                                        return (<div className="recipe" key={i} onClick={() => this.setSelected(i)}>
                                             <div className="imageContainer">
                                                 {
                                                     match.images.length > 0 && <img src={`https://www.dk-kogebogen.dk/${match.images[0]}`} loading="auto"/>
